@@ -2,9 +2,10 @@ const { network } = require("hardhat")
 
 const {
     priceFeedConfig,
-    developmentChains,
+    developmentChains
 } = require("../helper-hardhat-config")
-module.exports = async function ({ deployments, getNamedAccounts }) {
+const verify = require("../utils/verify")
+module.exports = async function({ deployments, getNamedAccounts }) {
     const { deploy, log } = deployments
     const { deployer } = await getNamedAccounts()
     const chainId = network.config.chainId
@@ -16,12 +17,20 @@ module.exports = async function ({ deployments, getNamedAccounts }) {
     } else {
         ethUsdFeedAddress = priceFeedConfig[chainId]["addressUsdPriceFeed"]
     }
-    await deploy("FundMe", {
+    const fundMe = await deploy("FundMe", {
         from: deployer,
         log: true,
         args: [ethUsdFeedAddress],
+        waitConfirmation: network.config.blockConfirmation || 1
     })
     log("-------------------------------------------------------------")
+
+    if (
+        !developmentChains.includes(network.name) &&
+        process.env.ETHERSCAN_APIKEY
+    ) {
+        await verify(fundMe.address || "", [ethUsdFeedAddress])
+    }
 }
 
 module.exports.tags = ["all", "main"]
