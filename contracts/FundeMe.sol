@@ -23,11 +23,14 @@ contract FundMe {
         priceFeed = AggregatorV3Interface(priceFeedAddress);
     }
 
-    function fund() public payable {
-        require(msg.value.getConversionRate(priceFeed) >= MINIMUM_USD, "You need to spend more ETH!");
-        // require(PriceConverter.getConversionRate(msg.value) >= MINIMUM_USD, "You need to spend more ETH!");
-        addressToAmountFunded[msg.sender] += msg.value;
-        funders.push(msg.sender);
+  
+
+    fallback() external payable {
+        fund();
+    }
+
+    receive() external payable {
+        fund();
     }
     
    
@@ -36,6 +39,13 @@ contract FundMe {
         // require(msg.sender == owner);
         if (msg.sender != i_owner) revert NotOwner();
         _;
+    }
+
+      function fund() public payable {
+        require(msg.value.getConversionRate(priceFeed) <= MINIMUM_USD, "You need to spend more ETH!");
+        // require(PriceConverter.getConversionRate(msg.value) >= MINIMUM_USD, "You need to spend more ETH!");
+        addressToAmountFunded[msg.sender] += msg.value;
+        funders.push(msg.sender);
     }
     
     function withdraw() public onlyOwner {
@@ -65,12 +75,6 @@ contract FundMe {
     //  /        \
     //receive()  fallback()
 
-    fallback() external payable {
-        fund();
-    }
-
-    receive() external payable {
-        fund();
-    }
+    
 
 }
