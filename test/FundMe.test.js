@@ -5,7 +5,7 @@ describe("Test  FundMe", async function() {
     let fundMe
     let deployer
     let mockAVI
-    const transferedEther = ethers.utils.parseEther("100")
+    const transferedEther = ethers.utils.parseEther("1")
     beforeEach(async function() {
         // await ethers.getSigners()
         deployer = (await getNamedAccounts()).deployer
@@ -73,5 +73,46 @@ describe("Test  FundMe", async function() {
                 finalBalanceofDeployer.add(gasUsedCost).toString()
             )
         })
+    })
+    it("allows to Withdraw from multiple funders accounts", async function() {
+        //send the amount through multiple accounts
+        const accounts = await ethers.getSigners()
+        for (let index = 0; index < 6; index++) {
+            const fundMeConnectedContract = await fundMe.connect(
+                accounts[index]
+            )
+            await fundMeConnectedContract.fund({ value: transferedEther })
+        }
+        const initialBalanceofContract = await fundMe.provider.getBalance(
+            fundMe.address
+        )
+        const initialBalanceofDeployer = await fundMe.provider.getBalance(
+            deployer
+        )
+
+        const transactionResponse = await fundMe.withdraw()
+
+        const transactionReceipt = await transactionResponse.wait(1)
+        const finalBalanceofContract = await fundMe.provider.getBalance(
+            fundMe.address
+        )
+        const { gasUsed, effectiveGasPrice } = transactionReceipt
+        const gasUsedCost = gasUsed.mul(effectiveGasPrice)
+
+        const finalBalanceofDeployer = await fundMe.provider.getBalance(
+            deployer
+        )
+        assert.equal(finalBalanceofContract.toString(), 0)
+        assert.equal(
+            initialBalanceofContract.add(initialBalanceofDeployer).toString(),
+            finalBalanceofDeployer.add(gasUsedCost).toString()
+        )
+        //check the funders array is reseted or not
+        await expect(fundMe.funders(0)).to.be.reverted
+
+        //check the mapping of address -> amount , amount is zero of each funders
+        for (let index = 0; index < 6; index++) {
+            assert(fundMe.addressToAmountFunded(accounts[index]), 0)
+        }
     })
 })
