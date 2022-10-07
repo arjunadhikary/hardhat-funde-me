@@ -16,7 +16,7 @@ contract FundMe {
     // Could we make this constant?  /* hint: no! We should make it immutable! */
     address public /* immutable */ i_owner;
     AggregatorV3Interface public  priceFeed;
-    uint256 public constant MINIMUM_USD = 50 * 10 ** 18;
+    uint256 public constant MINIMUM_USD = 50 * 10e18;
     
     constructor(address priceFeedAddress) {
         i_owner = msg.sender;
@@ -42,7 +42,7 @@ contract FundMe {
     }
 
       function fund() public payable {
-        require(msg.value.getConversionRate(priceFeed) <= MINIMUM_USD, "You need to spend more ETH!");
+        require(msg.value.getConversionRate(priceFeed) >= MINIMUM_USD, "You need to spend more ETH!");
         // require(PriceConverter.getConversionRate(msg.value) >= MINIMUM_USD, "You need to spend more ETH!");
         addressToAmountFunded[msg.sender] += msg.value;
         funders.push(msg.sender);

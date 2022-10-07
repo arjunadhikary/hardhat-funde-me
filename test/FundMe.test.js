@@ -5,7 +5,7 @@ describe("Test  FundMe", async function() {
     let fundMe
     let deployer
     let mockAVI
-    const transferedEther = ethers.utils.parseEther("5")
+    const transferedEther = ethers.utils.parseEther("100")
     beforeEach(async function() {
         // await ethers.getSigners()
         deployer = (await getNamedAccounts()).deployer
@@ -32,6 +32,46 @@ describe("Test  FundMe", async function() {
             const response = await fundMe.addressToAmountFunded(deployer)
 
             assert.equal(response.toString(), transferedEther.toString())
+        })
+        it("checks the funders address", async function() {
+            await fundMe.fund({ value: transferedEther })
+            const funder = await fundMe.funders(0)
+            assert.equal(deployer, funder)
+        })
+    })
+    describe("Withdraw Balance", async function() {
+        beforeEach(async function() {
+            await fundMe.fund({ value: transferedEther })
+        })
+
+        it("Withdraws Actual Amount from the contract", async function() {
+            const initialBalanceofContract = await fundMe.provider.getBalance(
+                fundMe.address
+            )
+            const initialBalanceofDeployer = await fundMe.provider.getBalance(
+                deployer
+            )
+
+            const transactionResponse = await fundMe.withdraw()
+
+            const transactionReceipt = await transactionResponse.wait(1)
+
+            const finalBalanceofContract = await fundMe.provider.getBalance(
+                fundMe.address
+            )
+            const { gasUsed, effectiveGasPrice } = transactionReceipt
+            const gasUsedCost = gasUsed.mul(effectiveGasPrice)
+
+            const finalBalanceofDeployer = await fundMe.provider.getBalance(
+                deployer
+            )
+            assert.equal(finalBalanceofContract.toString(), 0)
+            assert.equal(
+                initialBalanceofContract
+                    .add(initialBalanceofDeployer)
+                    .toString(),
+                finalBalanceofDeployer.add(gasUsedCost).toString()
+            )
         })
     })
 })
