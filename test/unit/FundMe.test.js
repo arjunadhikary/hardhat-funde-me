@@ -16,7 +16,7 @@ describe("Test  FundMe", async function() {
 
     describe("Constructor", async function() {
         it("checks to see if AVI is set correctly", async function() {
-            const AVI = await fundMe.priceFeed()
+            const AVI = await fundMe.getPriceFeed()
             assert.equal(AVI, mockAVI.address)
         })
     })
@@ -29,13 +29,13 @@ describe("Test  FundMe", async function() {
         })
         it("checks the sent amount", async function() {
             await fundMe.fund({ value: transferedEther })
-            const response = await fundMe.addressToAmountFunded(deployer)
+            const response = await fundMe.getaddressToAmountFunded(deployer)
 
             assert.equal(response.toString(), transferedEther.toString())
         })
         it("checks the funders address", async function() {
             await fundMe.fund({ value: transferedEther })
-            const funder = await fundMe.funders(0)
+            const funder = await fundMe.getFunder(0)
             assert.equal(deployer, funder)
         })
     })
@@ -52,7 +52,7 @@ describe("Test  FundMe", async function() {
                 deployer
             )
 
-            const transactionResponse = await fundMe.withdraw()
+            const transactionResponse = await fundMe.optimizedwithdraw()
 
             const transactionReceipt = await transactionResponse.wait(1)
 
@@ -74,6 +74,35 @@ describe("Test  FundMe", async function() {
             )
         })
     })
+
+    it("It is unoptimised Withdraw", async function() {
+        const initialBalanceofContract = await fundMe.provider.getBalance(
+            fundMe.address
+        )
+        const initialBalanceofDeployer = await fundMe.provider.getBalance(
+            deployer
+        )
+
+        const transactionResponse = await fundMe.unoptimizedwithdraw()
+
+        const transactionReceipt = await transactionResponse.wait(1)
+
+        const finalBalanceofContract = await fundMe.provider.getBalance(
+            fundMe.address
+        )
+        const { gasUsed, effectiveGasPrice } = transactionReceipt
+        const gasUsedCost = gasUsed.mul(effectiveGasPrice)
+
+        const finalBalanceofDeployer = await fundMe.provider.getBalance(
+            deployer
+        )
+        assert.equal(finalBalanceofContract.toString(), 0)
+        assert.equal(
+            initialBalanceofContract.add(initialBalanceofDeployer).toString(),
+            finalBalanceofDeployer.add(gasUsedCost).toString()
+        )
+    })
+
     it("allows to Withdraw from multiple funders accounts", async function() {
         //send the amount through multiple accounts
         const accounts = await ethers.getSigners()
@@ -90,7 +119,7 @@ describe("Test  FundMe", async function() {
             deployer
         )
 
-        const transactionResponse = await fundMe.withdraw()
+        const transactionResponse = await fundMe.optimizedwithdraw()
 
         const transactionReceipt = await transactionResponse.wait(1)
         const finalBalanceofContract = await fundMe.provider.getBalance(
@@ -108,11 +137,19 @@ describe("Test  FundMe", async function() {
             finalBalanceofDeployer.add(gasUsedCost).toString()
         )
         //check the funders array is reseted or not
-        await expect(fundMe.funders(0)).to.be.reverted
+        await expect(fundMe.getFunder(0)).to.be.reverted
 
         //check the mapping of address -> amount , amount is zero of each funders
         for (let index = 0; index < 6; index++) {
-            assert(fundMe.addressToAmountFunded(accounts[index]), 0)
+            assert(fundMe.getaddressToAmountFunded(accounts[index]), 0)
         }
+    })
+
+    it("allows only the owner to withdraw the amount", async function() {
+        const accounts = await ethers.getSigners()
+        const attacker = accounts[1]
+        const attackerConnectedToContract = await fundMe.connect(attacker)
+        await expect(attackerConnectedToContract.optimizedwithdraw()).to.be
+            .reverted
     })
 })
