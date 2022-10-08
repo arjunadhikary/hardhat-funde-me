@@ -15,7 +15,7 @@ contract FundMe {
     // Could we make this constant?  /* hint: no! We should make it immutable! */
     address private i_owner;
     AggregatorV3Interface private s_priceFeed;
-    uint256 public constant MINIMUM_USD = 50 * 10e18;
+    uint256 public constant MINIMUM_USD = 1 * 10e18;
 
     constructor(address priceFeedAddress) {
         i_owner = msg.sender;

@@ -20,7 +20,9 @@ module.exports = {
             url: GOERIL_URL,
             accounts: [GOERIL_ADDRESS],
             chainId: 5,
-            blockConfirmation: 4
+            blockConfirmation: 4,
+            gas: 2100000,
+            gasPrice: 6000000000
         }
     },
     gasReporter: {

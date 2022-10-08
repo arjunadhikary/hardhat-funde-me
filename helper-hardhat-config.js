@@ -12,7 +12,7 @@ const priceFeedConfig = {
 
 const developmentChains = ["localhost", "hardhat"]
 const DECIMAL = 8
-const INITIAL_ANSWER = 200000000000
+const INITIAL_ANSWER = 100000000000
 module.exports = {
     priceFeedConfig,
     INITIAL_ANSWER,
